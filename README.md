@@ -6,6 +6,9 @@ Library for listening to keyboard events.
 
 Written for [Deno](https://deno.com) + Windows 11. Uses native user32.dll, so no external modules are needed.
 
+> [!WARNING]
+> The code blocks the execution of macrotasks. It is intended to be executed in a separate thread.
+
 ## Usage example
 
 ```ts
