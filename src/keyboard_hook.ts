@@ -186,6 +186,7 @@ export const Key = {
     PrintScreen: 0x0E37,
 } as const;
 
+const WH_KEYBOARD_LL = 13;
 const WM_KEYDOWN = 0x0100;
 const WM_KEYUP = 0x0101;
 const WM_SYSKEYDOWN = 0x0104;
@@ -213,7 +214,6 @@ export class KeyboardHook extends TypedEventTarget<KeyboardHookEventMap> {
             return this.user32.symbols.CallNextHookEx(null, nCode, wParam, lParam);
         });
 
-        const WH_KEYBOARD_LL = 13;
         this.hookHandle = this.user32.symbols.SetWindowsHookExW(WH_KEYBOARD_LL, this.callback.pointer, null, 0);
 
         if (!this.hookHandle) {
