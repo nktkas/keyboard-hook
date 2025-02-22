@@ -9,5 +9,12 @@
         "indentWidth": 4,
         "lineWidth": 120
     },
-    "license": "MIT"
+    "publish": {
+        "exclude": [
+            ".github",
+            "example"
+        ]
+    },
+    "license": "MIT",
+    "lock": false
 }

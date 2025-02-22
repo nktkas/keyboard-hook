@@ -2,12 +2,14 @@
 
 [![JSR](https://jsr.io/badges/@nktkas/keyboard-hook)](https://jsr.io/@nktkas/keyboard-hook)
 
-Library for listening to keyboard events.
+Library for listening to global keyboard press events.
 
-Written for [Deno](https://deno.com) + Windows 11. Uses native user32.dll, so no external modules are needed.
+## Features
 
-> [!WARNING]
-> The code blocks the execution of macrotasks. It is intended to be executed in a separate thread.
+- Written for [Deno](https://deno.com) + Windows 11 x64.
+- Uses native user32.dll, so no external modules are needed.
+- Launches the [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API) to ensure that interaction
+  with user32.dll does not block the main loop.
 
 ## Usage example
 
@@ -51,18 +53,15 @@ export interface KeyEvent {
 
 /** A class to hook into keyboard events on Windows. */
 export class KeyboardHook extends EventTarget {
-    /**
-     * Starts monitoring of keyboard events.
-     * @returns A promise that resolves when monitoring is stopped.
-     */
-    async start(): Promise<void>;
+    /** Starts monitoring of keyboard events. */
+    start(): void;
 
-    /** Permanently stops monitoring of keyboard events. */
+    /** Stops monitoring of keyboard events. */
     stop(): void;
 
     /** Strictly typed addEventListener. */
     addEventListener(
-        type: "keydown" | "keyup" | "syskeydown" | "syskeyup",
+        type: "keydown" | "keyup" | "syskeydown" | "syskeyup" | "key",
         listener: (event: CustomEvent<KeyEvent>) => void,
     ): void;
 }
