@@ -12,7 +12,7 @@
     "publish": {
         "exclude": [
             ".github",
-            "example"
+            "benchmarks"
         ]
     },
     "license": "MIT",
