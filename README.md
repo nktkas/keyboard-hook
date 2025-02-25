@@ -83,7 +83,7 @@ export const Key = {
 ### Keyhold
 
 ```bash
-deno run --allow-ffi --allow-read .\benchmarks\keyhold.ts
+deno run --allow-ffi .\benchmarks\keyhold.ts
 ```
 
 ```
@@ -111,7 +111,7 @@ Emit to Receive Latency (ms):
 ### Keypress
 
 ```bash
-deno run --allow-ffi --allow-read .\benchmarks\keypress.ts
+deno run --allow-ffi .\benchmarks\keypress.ts
 ```
 
 ```
