@@ -15,42 +15,10 @@ export class KeyboardHook extends TypedEventTarget<KeyboardHookEventMap> {
 // —————————— Keyboard Hook ——————————
 
 const WH_KEYBOARD_LL = 13;
-const WM_KEYDOWN = 0x0100;
-const WM_KEYUP = 0x0101;
-const WM_SYSKEYDOWN = 0x0104;
-const WM_SYSKEYUP = 0x0105;
-
-const user32Symbols = {
-    SetWindowsHookExW: {
-        parameters: ["i32", "pointer", "pointer", "u32"],
-        result: "pointer",
-    },
-    CallNextHookEx: {
-        parameters: ["pointer", "i32", "u64", "pointer"],
-        result: "i32",
-    },
-    GetMessageW: {
-        parameters: ["pointer", "pointer", "u32", "u32"],
-        result: "i32",
-    },
-    PeekMessageW: {
-        parameters: ["pointer", "pointer", "u32", "u32", "u32"],
-        result: "i32",
-    },
-    UnhookWindowsHookEx: {
-        parameters: ["pointer"],
-        result: "i32",
-    },
-    PostQuitMessage: {
-        parameters: ["i32"],
-        result: "void",
-    },
-};
-
-const callbackDefinition = {
-    parameters: ["i32", "u64", "pointer"],
-    result: "i32",
-};
+const WM_KEYDOWN = 0x0100n;
+const WM_KEYUP = 0x0101n;
+const WM_SYSKEYDOWN = 0x0104n;
+const WM_SYSKEYUP = 0x0105n;
 
 class KeyboardHook extends EventTarget {
     #hookHandle;
@@ -61,22 +29,58 @@ class KeyboardHook extends EventTarget {
 
     constructor() {
         super();
-        this.#user32 = Deno.dlopen("user32.dll", user32Symbols);
-        this.#msgPtr = Deno.UnsafePointer.of(new Uint8Array(48));
+
+        this.#user32 = Deno.dlopen("user32.dll", {
+            SetWindowsHookExW: {
+                parameters: ["i32", "pointer", "pointer", "u32"],
+                result: "pointer",
+            },
+            CallNextHookEx: {
+                parameters: ["pointer", "i32", "u64", "pointer"],
+                result: "i32",
+            },
+            GetMessageW: {
+                parameters: ["pointer", "pointer", "u32", "u32"],
+                result: "i32",
+            },
+            PeekMessageW: {
+                parameters: ["pointer", "pointer", "u32", "u32", "u32"],
+                result: "i32",
+            },
+            UnhookWindowsHookEx: {
+                parameters: ["pointer"],
+                result: "i32",
+            },
+            PostQuitMessage: {
+                parameters: ["i32"],
+                result: "void",
+            },
+        });
+
+        const msgPtr = Deno.UnsafePointer.of(new Uint8Array(48));
+        if (msgPtr === null) {
+            throw new Error("Failed to allocate memory for message pointer.");
+        }
+        this.#msgPtr = msgPtr;
     }
 
     start() {
         if (this.#running) return;
         this.#running = true;
 
-        this.#callback = new Deno.UnsafeCallback(callbackDefinition, (nCode, wParam, lParam) => {
-            if (nCode === 0 && lParam !== null) {
-                const keyEvent = this.#parseKeyEvent(wParam, lParam);
-                const eventName = this.#getEventName(keyEvent.message);
-                this.dispatchEvent(new CustomEvent(eventName, { detail: keyEvent }));
-            }
-            return this.#user32.symbols.CallNextHookEx(null, nCode, wParam, lParam);
-        });
+        this.#callback = Deno.UnsafeCallback.threadSafe(
+            { parameters: ["i32", "u64", "pointer"], result: "i32" },
+            (nCode, wParam, lParam) => {
+                if (nCode === 0 && lParam !== null) {
+                    const keyEvent = this.#parseKeyEvent(lParam);
+                    const eventName = this.#getEventName(wParam);
+                    if (eventName) {
+                        this.dispatchEvent(new CustomEvent(eventName, { detail: keyEvent }));
+                    }
+                }
+                return this.#user32.symbols.CallNextHookEx(null, nCode, wParam, lParam);
+            },
+        );
 
         this.#hookHandle = this.#user32.symbols.SetWindowsHookExW(WH_KEYBOARD_LL, this.#callback.pointer, null, 0);
 
@@ -110,7 +114,7 @@ class KeyboardHook extends EventTarget {
         this.#user32.close();
     }
 
-    #parseKeyEvent(wParam, lParam) {
+    #parseKeyEvent(lParam) {
         const view = new Deno.UnsafePointerView(lParam);
         return {
             vkCode: view.getUint32(0),
@@ -118,7 +122,6 @@ class KeyboardHook extends EventTarget {
             flags: view.getUint32(8),
             time: view.getUint32(12),
             extraInfo: view.getBigUint64(16),
-            message: Number(wParam),
         };
     }
 
@@ -133,7 +136,7 @@ class KeyboardHook extends EventTarget {
             case WM_SYSKEYUP:
                 return "syskeyup";
             default:
-                return "key";
+                return undefined;
         }
     }
 }
@@ -152,9 +155,6 @@ hook.addEventListener("syskeydown", (event) => {
 });
 hook.addEventListener("syskeyup", (event) => {
     self.postMessage({ type: "syskeyup", detail: event.detail });
-});
-hook.addEventListener("key", (event) => {
-    self.postMessage({ type: "key", detail: event.detail });
 });
 hook.start();
 `;

@@ -12,8 +12,6 @@ export interface KeyEvent {
     time: number;
     /** Extra information. */
     extraInfo: bigint;
-    /** Message type (e.g., WM_KEYDOWN = 0x0100). */
-    message: number;
 }
 
 /** Event map for the {@linkcode KeyboardHook} class. */
@@ -22,41 +20,7 @@ export interface KeyboardHookEventMap {
     keyup: CustomEvent<KeyEvent>;
     syskeydown: CustomEvent<KeyEvent>;
     syskeyup: CustomEvent<KeyEvent>;
-    /** Unclassified key event. */
-    key: CustomEvent<KeyEvent>;
 }
-
-const user32Symbols = {
-    SetWindowsHookExW: {
-        parameters: ["i32", "pointer", "pointer", "u32"],
-        result: "pointer",
-    },
-    CallNextHookEx: {
-        parameters: ["pointer", "i32", "u64", "pointer"],
-        result: "i32",
-    },
-    GetMessageW: {
-        parameters: ["pointer", "pointer", "u32", "u32"],
-        result: "i32",
-    },
-    PeekMessageW: {
-        parameters: ["pointer", "pointer", "u32", "u32", "u32"],
-        result: "i32",
-    },
-    UnhookWindowsHookEx: {
-        parameters: ["pointer"],
-        result: "i32",
-    },
-    PostQuitMessage: {
-        parameters: ["i32"],
-        result: "void",
-    },
-} as const;
-
-const callbackDefinition = {
-    parameters: ["i32", "u64", "pointer"],
-    result: "i32",
-} as const;
 
 /** Enumeration of keyboard keys and their virtual key codes. */
 export const Key = {
@@ -186,46 +150,80 @@ export const Key = {
     PrintScreen: 0x0E37,
 } as const;
 
-const WH_KEYBOARD_LL = 13;
-const WM_KEYDOWN = 0x0100;
-const WM_KEYUP = 0x0101;
-const WM_SYSKEYDOWN = 0x0104;
-const WM_SYSKEYUP = 0x0105;
-
 /** A class to hook into keyboard events on Windows. */
 export class KeyboardHook extends TypedEventTarget<KeyboardHookEventMap> {
-    private hookHandle: Deno.PointerValue | undefined;
-    private callback: Deno.UnsafeCallback<typeof callbackDefinition> | undefined;
-    private user32 = Deno.dlopen("user32.dll", user32Symbols);
-    private msgPtr = Deno.UnsafePointer.of(new Uint8Array(48));
+    private readonly WH_KEYBOARD_LL = 13;
+    private readonly WM_KEYDOWN = 0x0100n;
+    private readonly WM_KEYUP = 0x0101n;
+    private readonly WM_SYSKEYDOWN = 0x0104n;
+    private readonly WM_SYSKEYUP = 0x0105n;
+
+    private user32 = Deno.dlopen("user32.dll", {
+        SetWindowsHookExW: {
+            parameters: ["i32", "pointer", "pointer", "u32"],
+            result: "pointer",
+        },
+        CallNextHookEx: {
+            parameters: ["pointer", "i32", "u64", "pointer"],
+            result: "i32",
+        },
+        GetMessageW: {
+            parameters: ["pointer", "pointer", "u32", "u32"],
+            result: "i32",
+        },
+        UnhookWindowsHookEx: {
+            parameters: ["pointer"],
+            result: "i32",
+        },
+        PostQuitMessage: {
+            parameters: ["i32"],
+            result: "void",
+        },
+    });
+    private callback: Deno.UnsafeCallback<{ parameters: ["i32", "u64", "pointer"]; result: "i32" }> | undefined;
+    private hookHandle: Deno.PointerObject | undefined;
+    private msgPtr: Deno.PointerObject;
     private running = false;
+
+    constructor() {
+        super();
+
+        const msgPtr = Deno.UnsafePointer.of(new Uint8Array(48));
+        if (msgPtr === null) {
+            throw new Error("Failed to allocate memory for message pointer.");
+        }
+        this.msgPtr = msgPtr;
+    }
 
     /** Starts monitoring of keyboard events. */
     public start(): void {
         if (this.running) return;
         this.running = true;
 
-        this.callback = new Deno.UnsafeCallback(callbackDefinition, (nCode, wParam, lParam) => {
-            if (nCode === 0 && lParam !== null) {
-                const keyEvent = this.parseKeyEvent(wParam, lParam);
-                const eventName = this.getEventName(keyEvent.message);
-                this.dispatchEvent(new CustomEvent(eventName, { detail: keyEvent }));
-            }
-            return this.user32.symbols.CallNextHookEx(null, nCode, wParam, lParam);
-        });
+        this.callback = Deno.UnsafeCallback.threadSafe(
+            { parameters: ["i32", "u64", "pointer"], result: "i32" },
+            (nCode, wParam, lParam) => {
+                if (nCode === 0 && lParam !== null) {
+                    const keyEvent = this.parseKeyEvent(lParam);
+                    const eventName = this.getEventName(wParam);
+                    if (eventName) {
+                        this.dispatchEvent(new CustomEvent(eventName, { detail: keyEvent }));
+                    }
+                }
+                return this.user32.symbols.CallNextHookEx(null, nCode, wParam, lParam);
+            },
+        );
 
-        this.hookHandle = this.user32.symbols.SetWindowsHookExW(WH_KEYBOARD_LL, this.callback.pointer, null, 0);
-
-        if (!this.hookHandle) {
+        const hookHandle = this.user32.symbols.SetWindowsHookExW(this.WH_KEYBOARD_LL, this.callback.pointer, null, 0);
+        if (hookHandle === null) {
             this.running = false;
             this.callback.close();
             throw new Error("Failed to install the hook.");
         }
+        this.hookHandle = hookHandle;
 
         while (this.running) {
-            // No idea which method is better
             this.user32.symbols.GetMessageW(this.msgPtr, null, 0, 0);
-            // this.user32.symbols.PeekMessageW(this.msgPtr, null, 0, 0, 1);
         }
     }
 
@@ -249,7 +247,7 @@ export class KeyboardHook extends TypedEventTarget<KeyboardHookEventMap> {
         this.user32.close();
     }
 
-    private parseKeyEvent(wParam: bigint, lParam: Deno.PointerObject): KeyEvent {
+    private parseKeyEvent(lParam: Deno.PointerObject): KeyEvent {
         const view = new Deno.UnsafePointerView(lParam);
         return {
             vkCode: view.getUint32(0),
@@ -257,22 +255,19 @@ export class KeyboardHook extends TypedEventTarget<KeyboardHookEventMap> {
             flags: view.getUint32(8),
             time: view.getUint32(12),
             extraInfo: view.getBigUint64(16),
-            message: Number(wParam),
         };
     }
 
-    private getEventName(message: number): string {
+    private getEventName(message: bigint): keyof KeyboardHookEventMap | undefined {
         switch (message) {
-            case WM_KEYDOWN:
+            case this.WM_KEYDOWN:
                 return "keydown";
-            case WM_KEYUP:
+            case this.WM_KEYUP:
                 return "keyup";
-            case WM_SYSKEYDOWN:
+            case this.WM_SYSKEYDOWN:
                 return "syskeydown";
-            case WM_SYSKEYUP:
+            case this.WM_SYSKEYUP:
                 return "syskeyup";
-            default:
-                return "key"; // unclassified key event
         }
     }
 }
