@@ -48,8 +48,6 @@ export interface KeyEvent {
     time: number;
     /** Extra information. */
     extraInfo: bigint;
-    /** Message type (e.g., WM_KEYDOWN = 0x0100). */
-    message: number;
 }
 
 /** A class to hook into keyboard events on Windows. */
@@ -62,7 +60,7 @@ export class KeyboardHook extends EventTarget {
 
     /** Strictly typed addEventListener. */
     addEventListener(
-        type: "keydown" | "keyup" | "syskeydown" | "syskeyup" | "key",
+        type: "keydown" | "keyup" | "syskeydown" | "syskeyup",
         listener: (event: CustomEvent<KeyEvent>) => void,
     ): void;
 }
