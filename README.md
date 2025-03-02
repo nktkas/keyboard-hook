@@ -146,3 +146,7 @@ Keyup Latency (ms):
 │ 100       │ 0.083 │ 0.133 │ 0.129  │ 0.180     │ 0.211     │ 0.286 │
 └───────────┴───────┴───────┴────────┴───────────┴───────────┴───────┘
 ```
+
+## Related
+
+[`@nktkas/windows-screenshot`](https://github.com/nktkas/windows-screenshot) - Library for creating a screenshot.
