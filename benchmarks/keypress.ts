@@ -300,7 +300,6 @@ async function runBenchmark() {
     try {
         // Initialize the keyboard hook
         const hook = new KeyboardHook();
-        hook.start();
 
         // Wait for initialization
         await new Promise((resolve) => setTimeout(resolve, CONFIG.initWait));
@@ -315,7 +314,7 @@ async function runBenchmark() {
         printResults(results);
 
         // Clean up
-        hook.stop();
+        hook.close();
     } finally {
         // Always close user32.dll
         user32.close();
