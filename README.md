@@ -235,5 +235,7 @@ Keyup Latency (ms):
 
 ## Related
 
+[`@nktkas/mouse-hook`](https://github.com/nktkas/mouse-hook) - Windows mouse listening for Deno with zero dependencies.
+
 [`@nktkas/windows-screenshot`](https://github.com/nktkas/windows-screenshot) - Windows screen capture for Deno with zero
 dependencies.
