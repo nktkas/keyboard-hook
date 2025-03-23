@@ -22,6 +22,9 @@ hook.addEventListener("syskeydown", (event) => {
 hook.addEventListener("syskeyup", (event) => {
     console.log("System key up:", event.detail);
 });
+
+// When done, clean up resources
+// hook.close();
 ```
 
 ## API
