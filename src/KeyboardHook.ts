@@ -243,12 +243,18 @@ export class KeyboardHook extends TypedEventTarget<KeyboardHookEventMap> {
                     const eventName = KeyboardHook.eventNameMap.get(wParam);
                     if (eventName) {
                         const view = new Deno.UnsafePointerView(lParam);
+                        // KBDLLHOOKSTRUCT structure:
+                        // https://learn.microsoft.com/en-us/windows/win32/api/winuser/ns-winuser-kbdllhookstruct
                         this.dispatchEvent(
                             new CustomEvent(eventName, {
                                 detail: {
+                                    // First DWORD (32-bit) value is the virtual key code
                                     vkCode: view.getUint32(0),
+                                    // Second DWORD is the hardware scan code
                                     scanCode: view.getUint32(4),
+                                    // Third DWORD contains various flags about key state
                                     flags: view.getUint32(8),
+                                    // Fourth DWORD is the timestamp of the event
                                     time: view.getUint32(12),
                                 },
                             }),
