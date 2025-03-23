@@ -45,14 +45,6 @@ class KeyboardHook extends EventTarget {
                 parameters: ["pointer", "pointer", "u32", "u32"],
                 result: "i32",
             },
-            PostQuitMessage: {
-                parameters: ["i32"],
-                result: "void",
-            },
-            UnhookWindowsHookEx: {
-                parameters: ["pointer"],
-                result: "i32",
-            },
         });
     }
 
