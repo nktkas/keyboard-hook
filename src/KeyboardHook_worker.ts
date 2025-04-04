@@ -35,27 +35,24 @@ class KeyboardHook extends EventTarget {
             { parameters: ["i32", "u32", "pointer"], result: "i32" },
             (nCode, wParam, lParam) => {
                 if (nCode >= 0 && lParam !== null) {
-                    const eventName = KeyboardEventNameMap[wParam];
-                    if (eventName) {
-                        const view = new Deno.UnsafePointerView(lParam);
-                        const rawFlags = view.getUint32(8);
-                        this.dispatchEvent(
-                            new CustomEvent(eventName, {
-                                detail: {
-                                    vkCode: view.getUint32(0),
-                                    scanCode: view.getUint32(4),
-                                    flags: {
-                                        extended: (rawFlags & 0x01) !== 0,
-                                        lowerIlInjected: (rawFlags & 0x02) !== 0,
-                                        injected: (rawFlags & 0x10) !== 0,
-                                        altDown: (rawFlags & 0x20) !== 0,
-                                        up: (rawFlags & 0x80) !== 0,
-                                    },
-                                    time: view.getUint32(12),
-                                },
-                            }),
-                        );
-                    }
+                    const eventName = KeyboardEventNameMap[wParam] ?? wParam;
+                    const view = new Deno.UnsafePointerView(lParam);
+
+                    const vkCode = view.getUint32(0);
+                    const scanCode = view.getUint32(4);
+
+                    const rawFlags = view.getUint32(8);
+                    const flags = {
+                        extended: (rawFlags & 0x01) !== 0,
+                        lowerIlInjected: (rawFlags & 0x02) !== 0,
+                        injected: (rawFlags & 0x10) !== 0,
+                        altDown: (rawFlags & 0x20) !== 0,
+                        up: (rawFlags & 0x80) !== 0,
+                    };
+
+                    const time = view.getUint32(12);
+
+                    this.dispatchEvent(new CustomEvent(eventName, { detail: { vkCode, scanCode, flags, time } }));
                 }
                 return this.#user32.symbols.CallNextHookEx(null, nCode, wParam, lParam);
             },
