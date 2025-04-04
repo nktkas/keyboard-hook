@@ -1,7 +1,7 @@
 import { TypedEventTarget } from "@derzade/typescript-event-target";
 import type { KeyboardHookEventMap } from "./KeyboardHook.ts";
 
-/** A class to globally track keyboard events in Windows. */
+/** A class to globally listen for keyboard events in Windows. */
 export class KeyboardHook extends TypedEventTarget<KeyboardHookEventMap> {
     private readonly worker: Worker;
 

@@ -2,7 +2,7 @@
 
 [![JSR](https://jsr.io/badges/@nktkas/keyboard-hook)](https://jsr.io/@nktkas/keyboard-hook)
 
-Windows keyboard listening for Deno with zero dependencies.
+Global Windows keyboard listener for Deno with zero dependencies.
 
 ## Usage example
 
@@ -53,7 +53,7 @@ export interface KeyboardEvent {
     time: number;
 }
 
-/** A class to globally track keyboard events in Windows. */
+/** A class to globally listen for keyboard events in Windows. */
 export class KeyboardHook extends EventTarget {
     /** Strictly typed addEventListener. */
     addEventListener(

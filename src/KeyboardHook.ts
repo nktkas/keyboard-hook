@@ -413,7 +413,7 @@ const KeyboardEventNameMap = {
 } as const;
 
 /**
- * A class to globally track keyboard events in Windows.
+ * A class to globally listen for keyboard events in Windows.
  *
  * **WARNING**: The class blocks the event loop. Therefore, run it in a separate thread.
  */
