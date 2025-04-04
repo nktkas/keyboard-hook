@@ -385,11 +385,30 @@ export const VirtualKeyCodes = {
     0xFE: "OEM_CLEAR",
 } as const;
 
-/** Maps Windows message identifiers to keyboard event names. */
+/**
+ * Maps Windows message identifiers to keyboard event names.
+ * @link https://learn.microsoft.com/en-us/windows/win32/winmsg/lowlevelkeyboardproc#wparam-in
+ */
 const KeyboardEventNameMap = {
+    /**
+     * WM_KEYDOWN message
+     * @link https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-keydown
+     */
     0x0100: "keydown",
+    /**
+     * WM_KEYUP message
+     * @link https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-keyup
+     */
     0x0101: "keyup",
+    /**
+     * WM_SYSKEYDOWN message
+     * @link https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-syskeydown
+     */
     0x0104: "syskeydown",
+    /**
+     * WM_SYSKEYUP message
+     * @link https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-syskeyup
+     */
     0x0105: "syskeyup",
 } as const;
 
