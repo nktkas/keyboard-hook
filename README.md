@@ -53,22 +53,32 @@ export interface KeyboardEvent {
     time: number;
 }
 
-/** A class to hook into keyboard events on Windows. */
+/** A class to globally track keyboard events in Windows. */
 export class KeyboardHook extends EventTarget {
-    /** Stops the keyboard hook and cleans up resources. */
-    close(): void;
-
     /** Strictly typed addEventListener. */
     addEventListener(
         type: "keydown" | "keyup" | "syskeydown" | "syskeyup",
         listener: (event: CustomEvent<KeyEvent>) => void,
     ): void;
+
+    /** Stops the keyboard hook and cleans up resources. */
+    close(): void;
 }
 
 /** Enumeration of virtual-key codes and their corresponding names. */
 export const VirtualKeyCodes = {
+    /** Left mouse button */
+    0x01: "LBUTTON",
+    /** Right mouse button */
+    0x02: "RBUTTON",
     /** Control-break processing */
     0x03: "CANCEL",
+    /** Middle mouse button */
+    0x04: "MBUTTON",
+    /** X1 mouse button */
+    0x05: "XBUTTON1",
+    /** X2 mouse button */
+    0x06: "XBUTTON2",
     /** Backspace key */
     0x08: "BACK",
     /** Tab key */
