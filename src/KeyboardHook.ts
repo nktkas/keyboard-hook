@@ -498,18 +498,18 @@ export class KeyboardHook extends TypedEventTarget<KeyboardHookEventMap> {
                     const eventName = KeyboardEventNameMap[wParam as keyof typeof KeyboardEventNameMap];
                     if (eventName) {
                         const view = new Deno.UnsafePointerView(lParam);
-                        const flags = view.getUint32(8);
+                        const rawFlags = view.getUint32(8);
                         this.dispatchEvent(
                             new CustomEvent(eventName, {
                                 detail: {
                                     vkCode: view.getUint32(0),
                                     scanCode: view.getUint32(4),
                                     flags: {
-                                        extended: (flags & 0x01) !== 0,
-                                        lowerIlInjected: (flags & 0x02) !== 0,
-                                        injected: (flags & 0x10) !== 0,
-                                        altDown: (flags & 0x20) !== 0,
-                                        up: (flags & 0x80) !== 0,
+                                        extended: (rawFlags & 0x01) !== 0,
+                                        lowerIlInjected: (rawFlags & 0x02) !== 0,
+                                        injected: (rawFlags & 0x10) !== 0,
+                                        altDown: (rawFlags & 0x20) !== 0,
+                                        up: (rawFlags & 0x80) !== 0,
                                     },
                                     time: view.getUint32(12),
                                 },
