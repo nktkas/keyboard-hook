@@ -2,7 +2,7 @@ import { TypedEventTarget } from "@derzade/typescript-event-target";
 import type { KeyboardHookEventMap } from "./KeyboardHook.ts";
 
 /** A class to globally listen for keyboard events in Windows. */
-export class KeyboardHook extends TypedEventTarget<KeyboardHookEventMap> {
+export class KeyboardHook extends TypedEventTarget<KeyboardHookEventMap> implements Disposable {
     private readonly worker: Worker;
 
     constructor() {
@@ -104,5 +104,9 @@ hook.start();
     /** Closes the keyboard hook and releases resources. */
     close(): void {
         this.worker.terminate();
+    }
+
+    [Symbol.dispose](): void {
+        this.close();
     }
 }
